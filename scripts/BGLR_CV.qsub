@@ -1,0 +1,101 @@
+#!/bin/bash
+#PBS -N oe_BGLR_CV
+#PBS -l select=1:ncpus=1:mem=5gb,walltime=72:00:00
+#PBS -j oe
+#PBS -J 1-90
+
+echo 'START ------------------------------'
+
+module add anaconda
+source activate r_env_360
+##lib_r360='.libPaths(c('~/.conda/envs/r_env_360/lib', .libPaths()))'
+src='/panicle/ssapkot/GrainComp/'
+#
+DESIGN_FILE='/panicle/ssapkot/GrainComp/scripts/Seeds_model1.txt'
+DESIGN=$(cat ${DESIGN_FILE} | head -n ${PBS_ARRAY_INDEX} | tail -n 1)
+#
+IFS=',' read -ra ARRAY <<< "${DESIGN}"
+#
+#MODEL="${ARRAY[0]}"
+SEED="${ARRAY[0]}"
+MODEL="${ARRAY[1]}"
+#
+###Rscript  <$src/scripts/CV_Bayesian_BGLR.R
+export LD_LIBRARY_PATH=/home/ssapkot/.conda/envs/r_env_360/lib/:$LD_LIBRARY_PATH
+
+R -e "
+
+library(BGLR)
+
+setwd('/scratch2/ssapkot/GrainComp/results/')
+load('/panicle/ssapkot/GrainComp/data/SAP_GrainQuality.RData') ##load geno-pheno files
+
+iter = \"${SEED}\"
+
+set.seed(iter)
+
+n <- nrow(X); p  <- ncol(X)
+
+expt =  'Bayesian_CV5'
+dir.create(paste0(expt))
+setwd(paste0(expt))
+
+dir.create(paste0('Model_Results'))
+setwd(paste0('Model_Results'))
+## M <- tcrossprod(scale(X))
+## G <- M/mean(diag(M))
+## EVD = eigen(G) ##make eigenvectors and eigenvalues
+
+#set the number of iterations and burnIns and thinning parameter
+nIter <- 20000
+burnIn <- 10000
+thin = 1
+
+# rownames(G) = 1:nrow(G)
+
+trait = \"Cal.g\"
+
+y = Y[,trait]
+
+dir.create(paste0(trait))
+setwd(paste0(trait))
+
+model = \"${MODEL}\"
+
+dir.create(paste(trait,model,iter,sep=\"_\"))
+setwd(paste(trait,model,iter,sep=\"_\"))
+
+Pred_value <- c()
+    cv_pool = rep(1:5, each=78)
+    folds = sample(cv_pool,n)
+        all_pred <- c()
+        pred <- c()
+        yhat <- data.frame(cbind(y, yhat = NA))
+        yhat\$yhat <- as.numeric(yhat\$yhat)
+        row.names(yhat) <- row.names(y)
+
+        corr <- c()
+        for(k in 1:5){
+            
+            test <- which(folds==k)
+            #Make training (TRN) and testing (TST) dfs
+            yNA <- y
+            yNA[test] <- NA #Mask yields for validation set
+
+            ETA =  list(list(X=X,model=model))
+            fm=BGLR(y=yNA,ETA=ETA, nIter=nIter,burnIn=burnIn, thin=thin, verbose=FALSE, saveAt=paste0(iter,\"_\",k,\"_\"))
+
+            yhat\$yhat[test]=fm\$yHat[test]
+
+            corr[k] <- cor(yhat\$yhat[test],yhat\$y[test])
+           }
+        pred <- unlist(corr[])        
+        all_pred <- cor(yhat\$y,yhat\$yhat)
+        accuracy <- rbind(pred,all_pred)
+        
+        setwd(\"../../\")
+write.csv(accuracy,file=paste(\"predictability\",model,trait,iter,\"CV5.csv\",sep=\"_\"),row.names=FALSE)
+
+    "
+
+    echo "-----------------FINISH"
