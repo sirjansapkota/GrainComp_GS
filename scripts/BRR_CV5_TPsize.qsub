@@ -1,0 +1,130 @@
+#!/bin/bash
+#PBS -N oe_BRR_TP   
+#PBS -l select=1:ncpus=1:mem=5gb,walltime=72:00:00
+#PBS -j oe
+#PBS -J 1-90
+
+echo 'START ------------------------------'
+
+module add anaconda
+source activate r_env_360
+##lib_r360='.libPaths(c('~/.conda/envs/r_env_360/lib', .libPaths()))'
+src='/panicle/ssapkot/GrainComp/'
+#
+DESIGN_FILE='/panicle/ssapkot/GrainComp/scripts/tp_seeds.txt'
+DESIGN=$(cat ${DESIGN_FILE} | head -n ${PBS_ARRAY_INDEX} | tail -n 1)
+#
+IFS=',' read -ra ARRAY <<< "${DESIGN}"
+#
+#MODEL="${ARRAY[0]}"
+SIZE="${ARRAY[0]}"
+SEED="${ARRAY[1]}"
+#
+###Rscript  <$src/scripts/CV_Bayesian_BGLR.R
+export LD_LIBRARY_PATH=/home/ssapkot/.conda/envs/r_env_360/lib/:$LD_LIBRARY_PATH
+
+R -e "
+
+library(BGLR)
+library(HardyWeinberg)
+
+setwd('/scratch2/ssapkot/GrainComp/results/BRR_TPsize/RILs/')
+load('/panicle/ssapkot/GrainComp/data/BTx642_GrainComp.RData') ##load geno-pheno files
+
+pop =  'BTx642'
+dir.create(paste0(pop))
+setwd(paste0(pop))
+
+tp = \"${SIZE}\"
+dir.create(paste0(tp))
+setwd(paste0(tp))
+
+iter = \"${SEED}\"
+
+set.seed(iter)
+sub <-sample(1:nrow(Y),tp,replace=FALSE)
+Y1 <- Y[sub,]
+X <- X[sub,]
+
+#### calculating minor allele frequency ######
+#count = MakeCounts(X)
+#AlleleFreq = maf(X)
+#MAF  =  cbind(1:ncol(X),(2*count[,3] + count[,2])/(2*389))
+#colnames(MAF) <- c('SNPs','MAF')
+
+#high = MAF[MAF[,2] > 0.66,]
+#mid = MAF[MAF[,2] > 0.33 & MAF[,2] < 0.66,]
+#low = MAF[MAF[,2] < 0.33,]
+write.csv(Y1[,1], paste0('Selected_',iter,'-seed_',tp,'.csv'), row.names=FALSE)
+###############################################
+
+n <- nrow(X); p <- ncol(X)
+
+
+# M <- tcrossprod(scale(X))
+# G <- M/mean(diag(M))
+# EVD = eigen(G) ##make eigenvectors and eigenvalues
+
+# #set the number of iterations and burnIns and thinning parameter
+nIter <- 20000
+burnIn <- 10000
+thin = 1
+
+# rownames(G) = 1:nrow(G)
+
+#trait <- \"${TRAIT}\"
+trait <- 'Protein'
+y = Y1[,trait]
+
+dir.create(paste0(trait))
+setwd(paste0(trait))
+
+# #models <- c('BRR','BayesA','BayesC')
+dir.create(paste0(iter))
+setwd(paste0(iter))
+Pred_value <- c()
+
+    model = 'BRR'
+    accuracy = c()
+    set.seed(iter)
+    
+    cv_pool = rep(1:5, each=78)
+    folds = sample(cv_pool,n)
+
+            #dir.create(paste(model))
+            #setwd(paste(model))
+            all_pred <- c()
+            pred <- c()
+            yhat <- data.frame(cbind(y, yhat = NA))
+            yhat\$yhat <- as.numeric(yhat\$yhat)
+            row.names(yhat) <- row.names(y)
+
+            corr <- c()
+            for(k in 1:5){
+                
+                test <- which(folds==k)
+                #Make training (TRN) and testing (TST) dfs
+
+                yNA <- y
+                yNA[test] <- NA #Mask yields for validation set
+                #df <- data.frame(y=yNA,gid=1:nrow(G)) #Set up dataframe with traits and genotype labe
+
+                ETA =  list(list(X=X,model=model))
+                fm=BGLR(y=yNA,ETA=ETA, nIter=nIter,burnIn=burnIn, thin=thin, verbose=FALSE, saveAt=paste0(iter,'_',k,'_'))
+
+                yhat\$yhat[test]=fm\$yHat[test]
+
+                corr[k] <- cor(yhat\$yhat[test],yhat\$y[test])
+                    }
+            pred <- unlist(corr[])
+            
+            all_pred <- cor(yhat\$y,yhat\$yhat)
+            accuracy <- rbind(pred,all_pred)
+            
+            setwd('../../../')
+    write.csv(accuracy,file=paste('predictability_BRR',tp,trait,iter,sep='_'),row.names=FALSE)
+    
+
+    "
+
+    echo '-----------------FINISH'
