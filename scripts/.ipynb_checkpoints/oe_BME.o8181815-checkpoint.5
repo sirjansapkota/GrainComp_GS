@@ -1,0 +1,83 @@
+START ------------------------------
+
+R version 3.6.0 (2019-04-26) -- "Planting of a Tree"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-conda_cos6-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> 
+> library(BMTME)
+> setwd('/scratch2/ssapkot/GrainComp/')
+> pop <- 'SAP'
+> load('/panicle/ssapkot/git_repo/GrainComp_GS/data/SAP_BMTME.RData')
+> setwd(pop)
+> dir.create('BME')
+Warning message:
+In dir.create("BME") : 'BME' already exists
+> setwd('BME')
+> pheno <- phenoBME
+> 
+> #Matrix design
+> LG <- cholesky(geno)
+> ZG <- model.matrix(~0 + as.factor(pheno$Taxa))
+> Z.G <- ZG %*% LG
+> #Pheno data
+> #traits <- c('Amylose','Protein','Cal.g','Fat','Starch')
+> env <- colnames(pheno)
+> trait <- "Starch"
+> 
+> #for (i in 1:length(traits)){
+> #       trait <- traits[i]
+>         #trait <- 'Starch'
+>         dir.create(trait)
+>         setwd(trait)
+>         cols <- grep(trait, env)
+>         Y <- as.matrix(phenoBME[cols])
+> 
+>         # Check fitting
+>         #fm <- BME(Y = Y, Z1 = Z.G, nIter = 100, burnIn = 10, thin = 1, bs = 0)
+> 
+>         # Check predictive capacities of the model with CrossValidation object
+>         pheno <- data.frame(GID = phenoBME[, 1], Env = '', Response = Y[, 3])
+>         CrossV <- CV.KFold(pheno, K=5, set_seed = 123)
+>         pm <- BME(Y = Y, Z1 = Z.G, nIter = 2000, burnIn = 1000, thin = 1, testingSet = CrossV)
+>         setwd('../')
+> 
+>         saveRDS(pm, file=paste0(pop,'_BME_CV5_',trait,'.rds'))
+>         res <- summary(pm, information='complete')
+>         write.csv(res, file=paste0('/panicle/ssapkot/git_repo/GrainComp_GS/results/',pop,'_',trait,'_BME.txt'), row.names=FALSE)
+> #    }
+> 
+> 
+> 
+Finish__________________
+ 
+ 
++------------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES REQUESTED | 
++------------------------------------------+ 
+ 
+mem=5gb,ncpus=1,walltime=36:00:00
+ 
+ 
++-------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES USED | 
++-------------------------------------+ 
+ 
+cpupercent=100,cput=00:21:51,mem=233304kb,ncpus=1,vmem=718664kb,walltime=00:21:58
+ 
+ 

@@ -1,0 +1,80 @@
+START ------------------------------
+cat: /panicle/ssapkot/git_repo/scripts/Design_File/SAP_STSE_traits.txt: No such file or directory
+
+R version 3.6.0 (2019-04-26) -- "Planting of a Tree"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-conda_cos6-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> 
+> library(BGLR)
+> library(BMTME)
+> 
+> pop <- 'GSDP'
+> dir.create(paste0(pop))
+Warning message:
+In dir.create(paste0(pop)) : 'GSDP' already exists
+> setwd(paste0(pop))
+> 
+> method <- 'SSTE'
+> dir.create(paste0(method))
+Warning message:
+In dir.create(paste0(method)) : 'SSTE' already exists
+> setwd(paste0(method))
+> 
+> setwd('/scratch2/ssapkot/GrainComp/')
+> load('/panicle/ssapkot/git_repo/GrainComp_GS/data/SAP_BMTME.RData') ##load geno-pheno files
+> 
+> #iter = ""
+> 
+> set.seed(123)
+> 
+> Y <- phenoBME
+> 
+> n <- nrow(Y)
+> m <- ceiling(nrow(Y)/5) ### to get the number of cv folds
+> 
+> #set the number of iterations and burnIns and thinning parameter
+> nIter <- 20000
+> burnIn <- 10000
+> thin = 1
+> 
+> # rownames(G) = 1:nrow(G)
+> 
+> trait = ""
+> 
+> y = Y[,trait]
+Error in `[.data.frame`(Y, , trait) : undefined columns selected
+Calls: [ -> [.data.frame
+Execution halted
+-----------------FINISH
+ 
+ 
++------------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES REQUESTED | 
++------------------------------------------+ 
+ 
+mem=5gb,ncpus=1,walltime=72:00:00
+ 
+ 
++-------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES USED | 
++-------------------------------------+ 
+ 
+cpupercent=101,cput=00:00:04,mem=0kb,ncpus=1,vmem=0kb,walltime=00:00:03
+ 
+ 

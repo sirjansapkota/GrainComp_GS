@@ -1,0 +1,5 @@
+Amylose
+Fat
+Gross_Energy
+Protein
+Starch

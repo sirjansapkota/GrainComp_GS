@@ -1,0 +1,67 @@
+START ------------------------------
+
+R version 3.6.0 (2019-04-26) -- "Planting of a Tree"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-conda_cos6-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> 
+> #.libPaths(c('/home/ssapkot/.conda/envs/r_env_360/lib', .libPaths()))
+> 
+> ##install.packages('BMTME',repos='http://cran.us.r-project.org', dependencies = TRUE)
+> library(BGLR)
+> library(doMC)
+Loading required package: foreach
+Loading required package: iterators
+Loading required package: parallel
+> library(foreach)
+> library(BMTME)
+> 
+> setwd('/panicle/ssapkot/git_repo/GrainComp_GS/')
+> 
+> #load('data/BTx642_BMTME_GrainComp.RData') #BTx642 data
+> load('data/BTx642_BMTME.RData') #BTx642 data
+> setwd('results/BMORS/')
+> pheno = phenoBMTME[,c(1:4,5,9)]
+> 
+> #iter = ""
+> 
+> pop <- 'BTx642'
+> 
+> dir.create(paste0(pop))
+Warning message:
+In dir.create(paste0(pop)) : 'BTx642' already exists
+> setwd(paste0(pop))
+> 
+> taxa <- unique(pheno$Taxa)
+> #rownames(G) = taxa
+> #colnames(G) = taxa
+> 
+> LG <- cholesky(geno) ##cholesky decomposition of genomic matrix for design matrices
+> ZG <- model.matrix(~0 + as.factor(pheno$Taxa))
+> Z.G <- ZG %*% LG
+> Z.E <- model.matrix(~0 + as.factor(pheno$Env))
+> ZEG <- model.matrix(~0 + as.factor(pheno$Taxa):as.factor(pheno$Env))
+> G2 <- kronecker(diag(length(unique(pheno$Env))), data.matrix(geno))
+> LG2 <- cholesky(G2)
+> Z.EG <- ZEG %*% LG2
+> Y <- as.matrix(pheno[, c('Amylose','Fat','GrossEnergy','Protein','Starch')])
+Error in `[.data.frame`(pheno, , c("Amylose", "Fat", "GrossEnergy", "Protein",  : 
+  undefined columns selected
+Calls: as.matrix -> [ -> [.data.frame
+Execution halted
+Finish__________________

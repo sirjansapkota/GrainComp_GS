@@ -1,0 +1,70 @@
+#!/bin/bash
+#PBS -N oe_BMTME
+#PBS -l select=1:ncpus=1:mem=5gb,walltime=72:00:00
+#PBS -j oe
+
+echo "START ------------------------------"
+
+module add anaconda
+source activate r_env_360
+##lib_r360='.libPaths(c('~/.conda/envs/r_env_360/lib', .libPaths()))'
+src='/panicle/ssapkot/GrainComp/'
+#
+#DESIGN_FILE='/scratch2/ssapkot/GrainComp/doc/CV_seeds.txt'
+#DESIGN=$(cat ${DESIGN_FILE} | head -n ${PBS_ARRAY_INDEX} | tail -n 1)
+#
+#IFS=',' read -ra ARRAY <<< "${DESIGN}"
+#
+#TRAIT="${ARRAY[0]}"
+###MODEL="${ARRAY[1]}"
+#
+###Rscript  <$src/scripts/CV_Bayesian_BGLR.R
+export LD_LIBRARY_PATH=/home/ssapkot/.conda/envs/r_env_360/lib/:$LD_LIBRARY_PATH
+
+R -e "
+
+#.libPaths(c('/home/ssapkot/.conda/envs/r_env_360/lib', .libPaths()))
+
+##install.packages('BMTME',repos='http://cran.us.r-project.org', dependencies = TRUE)
+library(BGLR)
+library(doMC)
+library(foreach)
+library(BMTME)
+
+setwd('/panicle/ssapkot/git_repo/GrainComp_GS/results/BMTME/')
+
+load('/panicle/ssapkot/git_repo/GrainComp_GS/data/BTx642_BMTME.RData')
+
+#setwd('results/BMTME')
+pheno = phenoBMTME
+taxa <- unique(pheno\$Taxa)
+#rownames(G) = taxa
+#colnames(G) = taxa
+
+LG <- cholesky(geno) ##cholesky decomposition of genomic matrix for design matrices
+ZG <- model.matrix(~0 + as.factor(pheno\$Taxa))
+Z.G <- ZG %*% LG
+Z.E <- model.matrix(~0 + as.factor(pheno\$Env))
+ZEG <- model.matrix(~0 + as.factor(pheno\$Taxa):as.factor(pheno\$Env))
+G2 <- kronecker(diag(length(unique(pheno\$Env))), data.matrix(geno))
+LG2 <- cholesky(G2)
+Z.EG <- ZEG %*% LG2
+Y <- as.matrix(pheno[, c('Amylose','Fat','GrossEnergy','Protein','Starch')])
+
+nIter = 20000; burnIn = 10000
+#fm <- BMTME(Y = Y, X = Z.E, Z1 = Z.G, Z2 = Z.EG, nIter = nIter, burnIn = burnIn, thin = 1, bs = 50, parallelCores=1,  progressBar = FALSE)
+
+#saveRDS(fm, file='BTx642_allPheno_BMTME_model.rds')
+
+df <- data.frame(GID = pheno[, 1], Env = pheno[, 4], Response = pheno[, 6])
+CrossV <- CV.KFold(df, DataSetID='GID', K=5, set_seed = 123)
+
+pm <- BMTME(Y = Y, X = Z.E, Z1 = Z.G, Z2 = Z.EG, nIter = nIter, burnIn = burnIn, thin = 1, bs = 50, testingSet = CrossV)
+
+saveRDS(pm, '/panicle/ssapkot/git_repo/GrainComp_GS/results/BMTME/BTx642/BTx642_BMTME_CV5_123.rds')
+
+#saveRData(pheno, G, X, file='data/BMTME_BTx642_data_GrainComp.RData')
+
+"
+echo "Finish__________________"
+

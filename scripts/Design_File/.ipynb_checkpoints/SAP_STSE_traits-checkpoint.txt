@@ -1,0 +1,15 @@
+Amylose2013
+Amylose2014
+Amylose2017
+Gross_Energy2013
+Gross_Energy2014
+Gross_Energy2017
+Fat2013
+Fat2014
+Fat2017
+Protein2013
+Protein2014
+Protein2017
+Starch2013
+Starch2014
+Starch2017

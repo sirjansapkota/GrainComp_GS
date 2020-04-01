@@ -1,0 +1,71 @@
+START ------------------------------
+
+R version 3.6.0 (2019-04-26) -- "Planting of a Tree"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-conda_cos6-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> 
+> 
+> #.libPaths(c('/home/ssapkot/.conda/envs/r_env_360/lib', .libPaths()))
+> 
+> ##install.packages('BMTME',repos='http://cran.us.r-project.org', dependencies = TRUE)
+> library(BGLR)
+> library(doMC)
+Loading required package: foreach
+Loading required package: iterators
+Loading required package: parallel
+> library(foreach)
+> library(BMTME)
+> 
+> setwd('/panicle/ssapkot/git_repo/GrainComp_GS/results/BMTME/')
+> 
+> load('/panicle/ssapkot/git_repo/GrainComp_GS/data/SAP_BMTME.RData')
+> 
+> #setwd('results/BMTME')
+> pheno = phenoBMTME
+> taxa <- unique(pheno$Taxa)
+> #rownames(G) = taxa
+> #colnames(G) = taxa
+> 
+> LG <- cholesky(geno) ##cholesky decomposition of genomic matrix for design matrices
+> ZG <- model.matrix(~0 + as.factor(pheno$Taxa))
+> Z.G <- ZG %*% LG
+> Z.E <- model.matrix(~0 + as.factor(pheno$Env))
+> ZEG <- model.matrix(~0 + as.factor(pheno$Taxa):as.factor(pheno$Env))
+> G2 <- kronecker(diag(length(unique(pheno$Env))), data.matrix(geno))
+> LG2 <- cholesky(G2)
+> Z.EG <- ZEG %*% LG2
+> Y <- as.matrix(pheno[, c('Amylose','Fat','Gross_Energy','Protein','Starch')])
+> 
+> nIter = 25000; burnIn = 15000
+> fm <- BMTME(Y = Y, X = Z.E, Z1 = Z.G, Z2 = Z.EG, nIter = nIter, burnIn = burnIn, thin = 1, bs = 50, parallelCores=1,  progressBar = FALSE)
+> 
+> saveRDS(fm, file='SAP_allPheno_BMTME_model.rds')
+> 
+> #df <- data.frame(GID = pheno[, 1], Env = pheno[, 2], Response = pheno[, 4])
+> #CrossV <- CV.KFold(df, DataSetID='GID', K=5, set_seed = 123)
+> 
+> #pm <- BMTME(Y = Y, X = Z.E, Z1 = Z.G, Z2 = Z.EG, nIter = nIter, burnIn = burnIn, thin = 1, bs = 50, testingSet = CrossV)
+> 
+> #saveRDS(pm, '/panicle/ssapkot/git_repo/GrainComp_GS/results/SAP_pGrain_BMTME_CV5.rds')
+> 
+> #saveRData(pheno, G, X, file='data/BMTME_SAP_data_GrainComp.RData')
+> 
+> 
+> 
+> 
+Finish__________________
