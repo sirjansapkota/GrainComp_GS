@@ -14,6 +14,3 @@ Genomic Prediction of grain composition in sorghum association panel
     
 ## scripts
     - Contains notebooks and various script files to run BGLR and BMTME packages in R as well as for making figures in python.
-
-## results
-     - figures: This folder contains figures generated using R and python for the data analysis done.
